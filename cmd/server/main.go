@@ -75,8 +75,8 @@ func handlePostGauge(w http.ResponseWriter, r *http.Request, metricName string, 
 	}
 
 	mu.Lock()
+	defer mu.Unlock()
 	gaugeMetrics[metricName] = gauge(parsedNumber)
-	mu.Unlock()
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
@@ -86,8 +86,8 @@ func handlePostGauge(w http.ResponseWriter, r *http.Request, metricName string, 
 // handleGetGauge retrieves the gauge metric for a given metric name.
 func handleGetGauge(w http.ResponseWriter, r *http.Request, metricName string) {
 	mu.Lock()
+	defer mu.Unlock()
 	value, exists := gaugeMetrics[metricName]
-	mu.Unlock()
 
 	if !exists {
 		http.Error(w, fmt.Sprintf("Gauge metric '%s' not found.", metricName), http.StatusNotFound)
