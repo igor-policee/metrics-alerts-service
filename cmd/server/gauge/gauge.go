@@ -51,7 +51,7 @@ func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Delegate to the handler for GET requests.
-		handleGetGauge(w, r, metricName)
+		handleGetGauge(w, metricName)
 	default:
 		// Respond with Method Not Allowed for unsupported HTTP methods.
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -84,12 +84,16 @@ func handlePostGauge(w http.ResponseWriter, r *http.Request, metricName string, 
 	// Set the response headers and write a success message.
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Gauge metric '%s' set to %.2f successfully.", metricName, parsedNumber)))
+	_, err = w.Write([]byte(fmt.Sprintf("Gauge metric '%s' set to %.2f successfully.", metricName, parsedNumber)))
+	if err != nil {
+		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleGetGauge processes GET requests to retrieve the value of a gauge metric.
 // It fetches the current value of the specified gauge and returns it.
-func handleGetGauge(w http.ResponseWriter, r *http.Request, metricName string) {
+func handleGetGauge(w http.ResponseWriter, metricName string) {
 	// Lock the mutex to ensure thread-safe access to gaugeMetrics.
 	mu.Lock()
 	defer mu.Unlock()
@@ -106,5 +110,9 @@ func handleGetGauge(w http.ResponseWriter, r *http.Request, metricName string) {
 	// Set the response headers and write the gauge value.
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%.2f", value)))
+	_, err := w.Write([]byte(fmt.Sprintf("%.2f", value)))
+	if err != nil {
+		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		return
+	}
 }

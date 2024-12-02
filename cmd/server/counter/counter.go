@@ -52,7 +52,7 @@ func UpdateCounterHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Delegate to the handler for GET requests.
-		handleGetCounter(w, r, metricName)
+		handleGetCounter(w, metricName)
 	default:
 		// Respond with Method Not Allowed for unsupported HTTP methods.
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -85,12 +85,16 @@ func handlePostCounter(w http.ResponseWriter, r *http.Request, metricName string
 	// Set the response headers and write a success message.
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Counter metric '%s' set to %d successfully.", metricName, parsedNumber)))
+	_, err = w.Write([]byte(fmt.Sprintf("Counter metric '%s' set to %d successfully.", metricName, parsedNumber)))
+	if err != nil {
+		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleGetCounter processes GET requests to retrieve the value of a counter metric.
 // It fetches the current value of the specified counter and returns it.
-func handleGetCounter(w http.ResponseWriter, r *http.Request, metricName string) {
+func handleGetCounter(w http.ResponseWriter, metricName string) {
 	// Lock the mutex to ensure thread-safe access to counterMetrics.
 	mu.Lock()
 	defer mu.Unlock()
@@ -107,5 +111,9 @@ func handleGetCounter(w http.ResponseWriter, r *http.Request, metricName string)
 	// Set the response headers and write the counter value.
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%d", value)))
+	_, err := w.Write([]byte(fmt.Sprintf("%d", value)))
+	if err != nil {
+		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		return
+	}
 }
