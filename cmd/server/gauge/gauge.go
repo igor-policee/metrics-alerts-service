@@ -1,66 +1,37 @@
-// Package gauge provides functionality to handle gauge metrics,
-// allowing setting and retrieving gauge values.
+// Package gauge handles gauge metric operations, including setting and retrieving gauge values.
 package gauge
 
 import (
-	"fmt"      // Format package for formatted I/O.
-	"net/http" // HTTP package for handling HTTP requests and responses.
-	"strconv"  // String conversion package for parsing strings to floats.
-	"strings"  // Strings package for string manipulation.
-	"sync"     // Synchronization package for mutex to handle concurrent access.
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
 )
 
-// gauge is a custom type based on float64 to represent gauge metrics.
-type gauge float64
+// Gauge represents a gauge metric.
+type Gauge float64
 
 // gaugeMetrics stores the current values of all gauge metrics identified by their names.
-var gaugeMetrics = make(map[string]gauge)
+var (
+	gaugeMetrics = make(map[string]Gauge)
+	mu           sync.Mutex
+)
 
-// mu is a mutex to ensure thread-safe access to the gaugeMetrics map.
-var mu sync.Mutex
-
-// UpdateGaugeHandler is the HTTP handler for updating and retrieving gauge metrics.
-// It handles both POST requests to set a gauge value and GET requests to retrieve a gauge value.
+// UpdateGaugeHandler processes POST requests to set gauge metrics.
 func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
-	// Split the URL path into parts to extract metric name and value.
-	pathParts := strings.Split(r.URL.Path, "/")
+	// Split the URL path into segments.
+	segments := splitPath(r.URL.Path)
 
 	// Validate the URL structure.
-	if len(pathParts) < 4 {
-		http.Error(w, "Invalid URL. Expected format: /update/gauge/<metric name>/<metric value>", http.StatusBadRequest)
+	if len(segments) != 5 {
+		http.Error(w, "Bad Request. Expected format: /update/gauge/<metricName>/<value>", http.StatusBadRequest)
 		return
 	}
 
-	// Extract the metric name from the URL.
-	metricName := pathParts[3]
+	metricName := segments[3]
+	valueStr := segments[4]
 
-	// Determine the HTTP method and handle accordingly.
-	switch r.Method {
-	case http.MethodPost:
-		// For POST requests, expect both metric name and value in the URL.
-		if len(pathParts) != 5 {
-			http.Error(w, "Invalid URL for POST. Expected format: /update/gauge/<metric name>/<metric value>", http.StatusBadRequest)
-			return
-		}
-		// Delegate to the handler for POST requests.
-		handlePostGauge(w, r, metricName, pathParts[4])
-	case http.MethodGet:
-		// For GET requests, expect only the metric name in the URL.
-		if len(pathParts) != 4 {
-			http.Error(w, "Invalid URL for GET. Expected format: /update/gauge/<metric name>", http.StatusBadRequest)
-			return
-		}
-		// Delegate to the handler for GET requests.
-		handleGetGauge(w, metricName)
-	default:
-		// Respond with Method Not Allowed for unsupported HTTP methods.
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-// handlePostGauge processes POST requests to set a gauge metric.
-// It parses the metric value and updates the corresponding gauge in the map.
-func handlePostGauge(w http.ResponseWriter, r *http.Request, metricName string, metricValue string) {
 	// Ensure the Content-Type header is set to text/plain.
 	if r.Header.Get("Content-Type") != "text/plain" {
 		http.Error(w, "Unsupported Media Type. Use text/plain.", http.StatusUnsupportedMediaType)
@@ -68,51 +39,65 @@ func handlePostGauge(w http.ResponseWriter, r *http.Request, metricName string, 
 	}
 
 	// Parse the metric value from string to float64.
-	parsedNumber, err := strconv.ParseFloat(metricValue, 64)
+	parsedValue, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
-		http.Error(w, "Invalid metric value. Please send a valid float64.", http.StatusBadRequest)
+		http.Error(w, "Invalid metric value. Please provide a valid float.", http.StatusBadRequest)
 		return
 	}
 
-	// Lock the mutex to ensure thread-safe access to gaugeMetrics.
+	// Set the gauge metric safely.
 	mu.Lock()
-	defer mu.Unlock()
+	gaugeMetrics[metricName] = Gauge(parsedValue)
+	mu.Unlock()
 
-	// Set the gauge metric to the parsed value.
-	gaugeMetrics[metricName] = gauge(parsedNumber)
-
-	// Set the response headers and write a success message.
+	// Respond with a success message.
+	response := fmt.Sprintf("Gauge metric '%s' set to %.2f successfully.", metricName, parsedValue)
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write([]byte(fmt.Sprintf("Gauge metric '%s' set to %.2f successfully.", metricName, parsedNumber)))
+	_, err = w.Write([]byte(response))
 	if err != nil {
-		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error.", http.StatusInternalServerError)
 		return
 	}
 }
 
-// handleGetGauge processes GET requests to retrieve the value of a gauge metric.
-// It fetches the current value of the specified gauge and returns it.
-func handleGetGauge(w http.ResponseWriter, metricName string) {
-	// Lock the mutex to ensure thread-safe access to gaugeMetrics.
+// GetGaugeHandler processes GET requests to retrieve gauge metrics.
+func GetGaugeHandler(w http.ResponseWriter, r *http.Request) {
+	// Split the URL path into segments.
+	segments := splitPath(r.URL.Path)
+
+	// Validate the URL structure.
+	if len(segments) != 4 {
+		http.Error(w, "Bad Request. Expected format: /value/gauge/<metricName>", http.StatusBadRequest)
+		return
+	}
+
+	metricName := segments[3]
+
+	// Retrieve the gauge metric safely.
 	mu.Lock()
 	defer mu.Unlock()
-
-	// Retrieve the gauge value from the map.
 	value, exists := gaugeMetrics[metricName]
 
-	// If the gauge does not exist, respond with a 404 error.
 	if !exists {
-		http.Error(w, fmt.Sprintf("Gauge metric '%s' not found.", metricName), http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
-	// Set the response headers and write the gauge value.
+	// Respond with the current value of the gauge metric.
+	response := fmt.Sprintf("%.2f", value)
 	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(fmt.Sprintf("%.2f", value)))
+	_, err := w.Write([]byte(response))
 	if err != nil {
-		http.Error(w, "Unknown error.", http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error.", http.StatusInternalServerError)
 		return
 	}
+}
+
+// splitPath is a helper function to split the URL path and remove empty segments.
+func splitPath(path string) []string {
+	// Remove any trailing slash and split the path.
+	if len(path) > 1 && path[len(path)-1] == '/' {
+		path = path[:len(path)-1]
+	}
+	return strings.Split(path, "/")
 }
