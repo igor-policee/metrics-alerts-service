@@ -29,7 +29,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Expecting exactly 5 segments: "", "update", "metricType", "metricName", "value".
 	if len(segments) != 5 {
-		http.Error(w, "Bad Request. Expected format: /update/<metricType>/<metricName>/<value>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /update/<metricType>/<metricName>/<value>", http.StatusNotFound)
 		return
 	}
 
