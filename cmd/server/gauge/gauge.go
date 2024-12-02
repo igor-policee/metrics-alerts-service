@@ -39,7 +39,7 @@ func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		// For POST requests, expect both metric name and value in the URL.
 		if len(pathParts) != 5 {
-			http.Error(w, "Invalid URL for POST. Expected format: /update/gauge/<metric name>/<metric value>", http.StatusBadRequest)
+			http.Error(w, "Invalid URL for POST. Expected format: /update/gauge/<metric name>/<metric value>", http.StatusNotFound)
 			return
 		}
 		// Delegate to the handler for POST requests.
