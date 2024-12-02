@@ -76,8 +76,8 @@ func GetCounterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the counter metric safely.
 	mu.Lock()
+	defer mu.Unlock()
 	value, exists := counterMetrics[metricName]
-	mu.Unlock()
 
 	if !exists {
 		http.NotFound(w, r)

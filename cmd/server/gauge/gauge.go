@@ -47,8 +47,8 @@ func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Set the gauge metric safely.
 	mu.Lock()
+	defer mu.Unlock()
 	gaugeMetrics[metricName] = Gauge(parsedValue)
-	mu.Unlock()
 
 	// Respond with a success message.
 	response := fmt.Sprintf("Gauge metric '%s' set to %.2f successfully.", metricName, parsedValue)
