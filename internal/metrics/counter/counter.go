@@ -28,7 +28,7 @@ func UpdateCounterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the URL structure.
 	if len(segments) != 5 {
-		http.Error(w, "Bad Request. Expected format: /update/counter/<metricName>/<value>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /update/counter/<metricName>/<value>", http.StatusNotFound)
 		return
 	}
 
@@ -71,7 +71,7 @@ func GetCounterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the URL structure.
 	if len(segments) != 4 {
-		http.Error(w, "Bad Request. Expected format: /value/counter/<metricName>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /value/counter/<metricName>", http.StatusNotFound)
 		return
 	}
 

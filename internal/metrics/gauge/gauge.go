@@ -28,7 +28,7 @@ func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the URL structure.
 	if len(segments) != 5 {
-		http.Error(w, "Bad Request. Expected format: /update/gauge/<metricName>/<value>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /update/gauge/<metricName>/<value>", http.StatusNotFound)
 		return
 	}
 
@@ -70,7 +70,7 @@ func GetGaugeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate the URL structure.
 	if len(segments) != 4 {
-		http.Error(w, "Bad Request. Expected format: /value/gauge/<metricName>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /value/gauge/<metricName>", http.StatusNotFound)
 		return
 	}
 
