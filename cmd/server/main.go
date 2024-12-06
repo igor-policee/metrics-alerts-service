@@ -1,12 +1,15 @@
+// cmd/server/main.go
+
 // Package main is the entry point for the Metrics Alerts Service server application.
 package main
 
 import (
-	"github.com/igor-policee/metrics-alerts-service/cmd/server/counter"
-	"github.com/igor-policee/metrics-alerts-service/cmd/server/gauge"
 	"log"
 	"net/http"
-	"strings"
+
+	"github.com/igor-policee/metrics-alerts-service/internal/metrics/counter"
+	"github.com/igor-policee/metrics-alerts-service/internal/metrics/gauge"
+	"github.com/igor-policee/metrics-alerts-service/internal/utils"
 )
 
 // supportedMetrics maps the supported metric types to their corresponding handlers.
@@ -25,7 +28,7 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Example URL: /update/unknown/testCounter/100
 	// Split the URL path into segments.
-	segments := splitPath(r.URL.Path)
+	segments := utils.SplitPath(r.URL.Path)
 
 	// Expecting exactly 5 segments: "", "update", "metricType", "metricName", "value".
 	if len(segments) != 5 {
@@ -44,15 +47,6 @@ func updateHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Delegate to the specific metric handler.
 	handler(w, r)
-}
-
-// splitPath is a helper function to split the URL path and remove empty segments.
-func splitPath(path string) []string {
-	// Remove any trailing slash and split the path.
-	if len(path) > 1 && path[len(path)-1] == '/' {
-		path = path[:len(path)-1]
-	}
-	return strings.Split(path, "/")
 }
 
 func main() {

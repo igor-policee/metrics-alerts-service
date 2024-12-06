@@ -1,3 +1,5 @@
+// internal/metrics/counter/counter.go
+
 // Package counter handles counter metric operations, including incrementing and retrieving counter values.
 package counter
 
@@ -5,8 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
+
+	"github.com/igor-policee/metrics-alerts-service/internal/utils"
 )
 
 // Counter represents a counter metric.
@@ -21,11 +24,11 @@ var (
 // UpdateCounterHandler processes POST requests to update counter metrics.
 func UpdateCounterHandler(w http.ResponseWriter, r *http.Request) {
 	// Split the URL path into segments.
-	segments := splitPath(r.URL.Path)
+	segments := utils.SplitPath(r.URL.Path)
 
 	// Validate the URL structure.
 	if len(segments) != 5 {
-		http.Error(w, "Bad Request. Expected format: /update/counter/<metricName>/<value>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /update/counter/<metricName>/<value>", http.StatusNotFound)
 		return
 	}
 
@@ -47,9 +50,9 @@ func UpdateCounterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update the counter metric safely.
 	mu.Lock()
-	defer mu.Unlock()
 	counterMetrics[metricName] += Counter(parsedValue)
 	currentValue := counterMetrics[metricName]
+	mu.Unlock()
 
 	// Respond with a success message.
 	response := fmt.Sprintf("Counter metric '%s' updated to %d successfully.", metricName, currentValue)
@@ -64,11 +67,11 @@ func UpdateCounterHandler(w http.ResponseWriter, r *http.Request) {
 // GetCounterHandler processes GET requests to retrieve counter metrics.
 func GetCounterHandler(w http.ResponseWriter, r *http.Request) {
 	// Split the URL path into segments.
-	segments := splitPath(r.URL.Path)
+	segments := utils.SplitPath(r.URL.Path)
 
 	// Validate the URL structure.
 	if len(segments) != 4 {
-		http.Error(w, "Bad Request. Expected format: /value/counter/<metricName>", http.StatusBadRequest)
+		http.Error(w, "Bad Request. Expected format: /value/counter/<metricName>", http.StatusNotFound)
 		return
 	}
 
@@ -92,13 +95,4 @@ func GetCounterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error.", http.StatusInternalServerError)
 		return
 	}
-}
-
-// splitPath is a helper function to split the URL path and remove empty segments.
-func splitPath(path string) []string {
-	// Remove any trailing slash and split the path.
-	if len(path) > 1 && path[len(path)-1] == '/' {
-		path = path[:len(path)-1]
-	}
-	return strings.Split(path, "/")
 }
