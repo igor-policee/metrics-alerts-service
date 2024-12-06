@@ -2,42 +2,26 @@ package main
 
 import (
 	"fmt"
-	"reflect"
-	"runtime"
-	"time"
+	"github.com/igor-policee/metrics-alerts-service/cmd/agent/sender"
+	"github.com/igor-policee/metrics-alerts-service/cmd/agent/storage"
+	"strconv"
+	"strings"
 )
 
 func main() {
 	fmt.Println("--> Hello Gophers! <--")
 
-	for t, metrics := range collectMetrics() {
-		for metric, value := range metrics {
-			fmt.Println(t, metric, value)
+	serverAddress := "http://localhost:8080"
+	metricOperation := "update"
+	metricType := "gauge"
+
+	for _, metrics := range storage.CollectGaugeMetrics() {
+		for metricName, metricValue := range metrics {
+			endpointSlice := []string{serverAddress, metricOperation, metricType, metricName, strconv.FormatUint(metricValue, 10)}
+			endpointString := strings.Join(endpointSlice, "/")
+			sender.SendPostRequest(endpointString)
 		}
 	}
 
 	fmt.Println("--> Good Bye Gophers! <--")
-}
-
-func collectMetrics() map[string]map[string]uint64 {
-	metricStorage := make(map[string]map[string]uint64)
-	var memStats runtime.MemStats
-	runtime.ReadMemStats(&memStats)
-
-	v := reflect.ValueOf(memStats)
-	typeOfMemStats := v.Type()
-
-	now := time.Now().Format(time.RFC3339)
-	metricStorage[now] = make(map[string]uint64)
-
-	for i := 0; i < v.NumField(); i++ {
-		field := typeOfMemStats.Field(i).Name
-		fieldValue := v.Field(i)
-
-		if fieldValue.Kind() == reflect.Uint64 {
-			metricStorage[now][field] = fieldValue.Uint()
-		}
-	}
-
-	return metricStorage
 }
