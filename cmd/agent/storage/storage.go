@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func CollectMetrics() map[string]map[string]uint64 {
+func CollectGaugeMetrics() map[string]map[string]uint64 {
 	metricStorage := make(map[string]map[string]uint64)
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
