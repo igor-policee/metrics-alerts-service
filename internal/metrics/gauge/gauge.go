@@ -1,3 +1,5 @@
+// internal/metrics/gauge/gauge.go
+
 // Package gauge handles gauge metric operations, including setting and retrieving gauge values.
 package gauge
 
@@ -5,8 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
+
+	"github.com/igor-policee/metrics-alerts-service/internal/utils"
 )
 
 // Gauge represents a gauge metric.
@@ -21,7 +24,7 @@ var (
 // UpdateGaugeHandler processes POST requests to set gauge metrics.
 func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 	// Split the URL path into segments.
-	segments := splitPath(r.URL.Path)
+	segments := utils.SplitPath(r.URL.Path)
 
 	// Validate the URL structure.
 	if len(segments) != 5 {
@@ -47,8 +50,8 @@ func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Set the gauge metric safely.
 	mu.Lock()
-	defer mu.Unlock()
 	gaugeMetrics[metricName] = Gauge(parsedValue)
+	mu.Unlock()
 
 	// Respond with a success message.
 	response := fmt.Sprintf("Gauge metric '%s' set to %.2f successfully.", metricName, parsedValue)
@@ -63,7 +66,7 @@ func UpdateGaugeHandler(w http.ResponseWriter, r *http.Request) {
 // GetGaugeHandler processes GET requests to retrieve gauge metrics.
 func GetGaugeHandler(w http.ResponseWriter, r *http.Request) {
 	// Split the URL path into segments.
-	segments := splitPath(r.URL.Path)
+	segments := utils.SplitPath(r.URL.Path)
 
 	// Validate the URL structure.
 	if len(segments) != 4 {
@@ -75,8 +78,8 @@ func GetGaugeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the gauge metric safely.
 	mu.Lock()
-	defer mu.Unlock()
 	value, exists := gaugeMetrics[metricName]
+	mu.Unlock()
 
 	if !exists {
 		http.NotFound(w, r)
@@ -91,13 +94,4 @@ func GetGaugeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error.", http.StatusInternalServerError)
 		return
 	}
-}
-
-// splitPath is a helper function to split the URL path and remove empty segments.
-func splitPath(path string) []string {
-	// Remove any trailing slash and split the path.
-	if len(path) > 1 && path[len(path)-1] == '/' {
-		path = path[:len(path)-1]
-	}
-	return strings.Split(path, "/")
 }
