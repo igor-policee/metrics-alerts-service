@@ -1,75 +1,61 @@
+// cmd/agent/storage/gauge.go
 package storage
 
 import (
 	"fmt"
-	"reflect"
 	"runtime"
 	"time"
 )
 
 func GetMemStats() map[string]map[string]string {
-	// const metricType = "gauge"
-	// Define the metrics to collect as a set for efficient lookup
-	collectMetrics := map[string]struct{}{
-		"HeapAlloc":     {},
-		"HeapInuse":     {},
-		"StackSys":      {},
-		"MCacheInuse":   {},
-		"MCacheSys":     {},
-		"OtherSys":      {},
-		"TotalAlloc":    {},
-		"HeapSys":       {},
-		"HeapReleased":  {},
-		"HeapObjects":   {},
-		"MSpanInuse":    {},
-		"NextGC":        {},
-		"Mallocs":       {},
-		"StackInuse":    {},
-		"GCSys":         {},
-		"PauseTotalNs":  {},
-		"Alloc":         {},
-		"Sys":           {},
-		"Lookups":       {},
-		"Frees":         {},
-		"HeapIdle":      {},
-		"MSpanSys":      {},
-		"BuckHashSys":   {},
-		"LastGC":        {},
-		"GCCPUFraction": {},
-		"NumForcedGC":   {},
-		"NumGC":         {},
-	}
-
-	var memStats runtime.MemStats
+	memStats := runtime.MemStats{}
 	runtime.ReadMemStats(&memStats)
-
-	v := reflect.ValueOf(memStats)
-	typeOfMemStats := v.Type()
 
 	metricStorage := make(map[string]map[string]string)
 	now := time.Now().Format(time.RFC3339)
 	metricStorage[now] = make(map[string]string)
 
-	// Iterate through the fields once and collect the desired metrics
-	for i := 0; i < v.NumField(); i++ {
-		fieldName := typeOfMemStats.Field(i).Name
-		if _, exists := collectMetrics[fieldName]; exists {
-			field := v.Field(i)
-			var valueStr string
+	collectMetrics := map[string]interface{}{
+		"HeapAlloc":     memStats.HeapAlloc,
+		"HeapInuse":     memStats.HeapInuse,
+		"StackSys":      memStats.StackSys,
+		"MCacheInuse":   memStats.MCacheInuse,
+		"MCacheSys":     memStats.MCacheSys,
+		"OtherSys":      memStats.OtherSys,
+		"TotalAlloc":    memStats.TotalAlloc,
+		"HeapSys":       memStats.HeapSys,
+		"HeapReleased":  memStats.HeapReleased,
+		"HeapObjects":   memStats.HeapObjects,
+		"MSpanInuse":    memStats.MSpanInuse,
+		"NextGC":        memStats.NextGC,
+		"Mallocs":       memStats.Mallocs,
+		"StackInuse":    memStats.StackInuse,
+		"GCSys":         memStats.GCSys,
+		"PauseTotalNs":  memStats.PauseTotalNs,
+		"Alloc":         memStats.Alloc,
+		"Sys":           memStats.Sys,
+		"Lookups":       memStats.Lookups,
+		"Frees":         memStats.Frees,
+		"HeapIdle":      memStats.HeapIdle,
+		"MSpanSys":      memStats.MSpanSys,
+		"BuckHashSys":   memStats.BuckHashSys,
+		"LastGC":        memStats.LastGC,
+		"GCCPUFraction": memStats.GCCPUFraction,
+		"NumForcedGC":   memStats.NumForcedGC,
+		"NumGC":         memStats.NumGC,
+	}
 
-			// Convert the field value to a string based on its kind
-			switch field.Kind() {
-			case reflect.Uint64, reflect.Uint32, reflect.Uint:
-				valueStr = fmt.Sprintf("%d", field.Uint())
-			case reflect.Float64:
-				valueStr = fmt.Sprintf("%f", field.Float())
-			default:
-				// Skip unsupported types without panicking
-				continue
-			}
-
-			metricStorage[now][fieldName] = valueStr
+	for metricName, metricValue := range collectMetrics {
+		var valueStr string
+		switch v := metricValue.(type) {
+		case uint64, uint32, uint:
+			valueStr = fmt.Sprintf("%d", v)
+		case float64:
+			valueStr = fmt.Sprintf("%f", v)
+		default:
+			continue
 		}
+		metricStorage[now][metricName] = valueStr
 	}
 
 	return metricStorage

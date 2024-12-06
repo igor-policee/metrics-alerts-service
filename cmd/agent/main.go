@@ -1,13 +1,16 @@
+// cmd/agent/main.go
+
 package main
 
 import (
 	"fmt"
-	"github.com/igor-policee/metrics-alerts-service/cmd/agent/sender"
-	"github.com/igor-policee/metrics-alerts-service/cmd/agent/storage"
-	"math/rand/v2"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/igor-policee/metrics-alerts-service/cmd/agent/sender"
+	"github.com/igor-policee/metrics-alerts-service/cmd/agent/storage"
 )
 
 func main() {
@@ -17,10 +20,13 @@ func main() {
 	const metricOperation = "update"
 	const pollInterval = 5
 
-	for {
+	pollCount := 0
 
+	for {
+		// Collect and send gauge metrics
 		metricType := "gauge"
-		for _, metrics := range storage.GetMemStats() {
+		memStats := storage.GetMemStats()
+		for _, metrics := range memStats {
 			for metricName, metricValue := range metrics {
 				endpointSlice := []string{serverAddress, metricOperation, metricType, metricName, metricValue}
 				endpointString := strings.Join(endpointSlice, "/")
@@ -28,7 +34,7 @@ func main() {
 			}
 		}
 
-		metricType = "gauge"
+		// Send a random gauge metric
 		metricName := "RandomValue"
 		randomNumber := rand.Int()
 		metricValue := strconv.Itoa(randomNumber)
@@ -37,16 +43,17 @@ func main() {
 		fmt.Println(endpointString)
 		sender.SendPostRequest(endpointString)
 
+		// Send a counter metric
 		metricType = "counter"
 		metricName = "PollCount"
-		metricValue = strconv.Itoa(1)
+		pollCount++
+		metricValue = strconv.Itoa(pollCount)
 		endpointSlice = []string{serverAddress, metricOperation, metricType, metricName, metricValue}
 		endpointString = strings.Join(endpointSlice, "/")
 		sender.SendPostRequest(endpointString)
 
-		time.Sleep(pollInterval * time.Second)
+		time.Sleep(time.Duration(pollInterval) * time.Second)
 
 		fmt.Println("--> Good Bye Gophers! <--")
-
 	}
 }
