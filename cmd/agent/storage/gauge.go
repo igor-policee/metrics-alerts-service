@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-func GetGaugeMetrics() map[string]map[string]string {
+func GetMemStats() map[string]map[string]string {
+	// const metricType = "gauge"
 	// Define the metrics to collect as a set for efficient lookup
 	collectMetrics := map[string]struct{}{
 		"HeapAlloc":     {},

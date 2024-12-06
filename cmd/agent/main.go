@@ -6,22 +6,37 @@ import (
 	"github.com/igor-policee/metrics-alerts-service/cmd/agent/storage"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
 	fmt.Println("--> Hello Gophers! <--")
 
-	serverAddress := "http://localhost:8080"
-	metricOperation := "update"
-	metricType := "gauge"
+	const serverAddress = "http://localhost:8080"
+	const metricOperation = "update"
+	const pollInterval = 5
 
-	for _, metrics := range storage.CollectGaugeMetrics() {
-		for metricName, metricValue := range metrics {
-			endpointSlice := []string{serverAddress, metricOperation, metricType, metricName, strconv.FormatUint(metricValue, 10)}
-			endpointString := strings.Join(endpointSlice, "/")
-			sender.SendPostRequest(endpointString)
+	for {
+
+		metricType := "gauge"
+		for _, metrics := range storage.GetMemStats() {
+			for metricName, metricValue := range metrics {
+				endpointSlice := []string{serverAddress, metricOperation, metricType, metricName, metricValue}
+				endpointString := strings.Join(endpointSlice, "/")
+				sender.SendPostRequest(endpointString)
+			}
 		}
-	}
 
-	fmt.Println("--> Good Bye Gophers! <--")
+		metricType = "counter"
+		metricName := "PollCount"
+		metricValue := strconv.Itoa(1)
+		endpointSlice := []string{serverAddress, metricOperation, metricType, metricName, metricValue}
+		endpointString := strings.Join(endpointSlice, "/")
+		sender.SendPostRequest(endpointString)
+
+		time.Sleep(pollInterval * time.Second)
+
+		fmt.Println("--> Good Bye Gophers! <--")
+
+	}
 }
