@@ -1,5 +1,27 @@
 # Сервис сбора метрик и алертинга
 
+## Структура проекта
+
+```markdown
+metrics-alerts-service/
+├── cmd/
+│   └── server/
+│       └── <...>
+├── internal/
+│   ├── metrics/
+│   │   ├── counter/
+│   │   │   ├── counter.go
+│   │   │   └── counter_test.go
+│   │   └── gauge/
+│   │       ├── gauge.go
+│   │       └── gauge_test.go
+│   └── utils/
+│       └── utils.go
+├── go.mod
+├── go.sum
+└── README.md
+```
+
 ## Инкремент 1
 
 Сервер для сбора runtime-метрик, который принимает отчёты от агентов по протоколу `HTTP`.
