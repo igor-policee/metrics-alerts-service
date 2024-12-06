@@ -3,23 +3,30 @@
 ## Структура проекта
 
 ```markdown
-metrics-alerts-service/
-├── cmd/
-│   └── server/
-│       └── <...>
-├── internal/
-│   ├── metrics/
-│   │   ├── counter/
-│   │   │   ├── counter.go
-│   │   │   └── counter_test.go
-│   │   └── gauge/
-│   │       ├── gauge.go
-│   │       └── gauge_test.go
-│   └── utils/
-│       └── utils.go
+├── README.md
+├── cmd
+│   ├── agent
+│   │   ├── main.go
+│   │   ├── sender
+│   │   │   └── sender.go
+│   │   └── storage
+│   │       └── gauge.go
+│   └── server
+│       └── main.go
 ├── go.mod
-├── go.sum
-└── README.md
+├── internal
+│   ├── handlers
+│   ├── metrics
+│   │   ├── counter
+│   │   │   ├── counter.go
+│   │   │   └── counter_test.go
+│   │   └── gauge
+│   │       ├── gauge.go
+│   │       └── gauge_test.go
+│   └── utils
+│       └── utils.go
+├── pkg
+    └── DRAFT.md
 ```
 
 ## Инкремент 1
